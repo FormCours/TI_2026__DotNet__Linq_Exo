@@ -90,4 +90,19 @@ foreach (var elem in rb2_v1)
     Console.WriteLine(elem);
 }
 
+// --------------------------------------------------------------
 
+Console.WriteLine();
+Console.WriteLine("Exercice 4.1");
+// Donner pour chaque section, le résultat maximum (« Max_Result ») obtenu par les étudiants.
+var r4_1 = context.Students.GroupBy(s => s.Section_ID)
+                         .Select(g => new
+                         {
+                             Max_Result = g.Max(gi => gi.Year_Result),
+                             Section = g.Key
+                         });
+
+foreach (var element in r4_1)
+{
+    Console.WriteLine(element);
+}
