@@ -96,11 +96,20 @@ Console.WriteLine();
 Console.WriteLine("Exercice 4.1");
 // Donner pour chaque section, le résultat maximum (« Max_Result ») obtenu par les étudiants.
 var r4_1 = context.Students.GroupBy(s => s.Section_ID)
-                         .Select(g => new
-                         {
-                             Max_Result = g.Max(gi => gi.Year_Result),
-                             Section = g.Key
-                         });
+                           .Select(g => new
+                           {
+                               Max_Result = g.Max(gi => gi.Year_Result),
+                               Section = g.Key
+                           });
+
+// Version en expression avec le mot clef "into" pour enchainer sur un select
+var r4_1bis = from s in context.Students
+              group s by s.Section_ID into g
+              select new
+              {
+                  Section = g.Key,
+                  Max_Result = g.Max(gi => gi.Year_Result),
+              };
 
 foreach (var element in r4_1)
 {
