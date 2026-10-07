@@ -1,5 +1,6 @@
 ﻿using Exo_Linq_Context;
 using System.Globalization;
+using static System.Collections.Specialized.BitVector32;
 
 Console.WriteLine("Exercice Linq");
 Console.WriteLine("*************");
@@ -114,4 +115,117 @@ var r4_1bis = from s in context.Students
 foreach (var element in r4_1)
 {
     Console.WriteLine(element);
+}
+
+
+
+Console.Clear();
+Console.WriteLine("Bonus 03");
+/*
+Obtenir les cours du professeur ayant les meilleurs étudiants.
+
+Afficher :
+- Le nom du professeur
+- La moyenne de sa section
+- La liste de ses cours
+*/
+
+
+// - Version pour personne trop passionné qui veullent tout faire en une seul requete :D
+var rb3 = context.Students
+                 .GroupBy(st => st.Section_ID)
+                 .Select(g => new
+                 {
+                     SectionId = g.Key,
+                     SectionStudents = g.Select(gi => gi),
+                     SectionAvg = g.Average(gi => gi.Year_Result),
+                 })
+                 .GroupBy(elem => elem.SectionAvg)
+                 .OrderByDescending(elem => elem.Key)
+                 .First()
+                 .Join(
+                    context.Professors,
+                    sg => sg.SectionId,
+                    p => p.Section_ID,
+                    (sg, p) => new
+                    {
+                        SectionId = sg.SectionId,
+                        SectionAvg = sg.SectionAvg,
+                        ProfName = p.Professor_Name,
+                        ProfId = p.Professor_ID
+                    }
+                 )
+                 .GroupJoin(
+                    context.Courses,
+                    sgp => sgp.ProfId,
+                    c => c.Professor_ID,
+                    (sgp, courses) => new
+                    {
+                        SectionId = sgp.SectionId,
+                        SectionAvg = sgp.SectionAvg,
+                        ProfName = sgp.ProfName,
+                        Courses = courses.Select(c => new
+                        {
+                            Name= c.Course_Name,
+                            Ects = c.Course_Ects
+                        })
+                    }
+                 );
+
+// - Version attendu
+var rb3_MaxAvgSection = context.Students.GroupBy(st => st.Section_ID)
+                                        .Max(g => g.Average(gi => gi.Year_Result));
+
+var rb3_BestSection = context.Students
+                             .GroupBy(st => st.Section_ID)
+                             .Select(g => new
+                             {
+                                 SectionId = g.Key,
+                                 SectionStudents = g.Select(gi => gi),
+                                 SectionAvg = g.Average(gi => gi.Year_Result),
+                             })
+                             .Where(g => g.SectionAvg == rb3_MaxAvgSection)
+                             .Select(elem => new
+                             {
+                                 SectionAvg = elem.SectionAvg,
+                                 SectionId = elem.SectionId
+                             });
+
+var rb3_Result = rb3_BestSection.Join(
+                    context.Professors,
+                    sg => sg.SectionId,
+                    p => p.Section_ID,
+                    (sg, p) => new
+                    {
+                        SectionId = sg.SectionId,
+                        SectionAvg = sg.SectionAvg,
+                        ProfName = p.Professor_Name,
+                        ProfId = p.Professor_ID
+                    }
+                 )
+                 .GroupJoin(
+                    context.Courses,
+                    sgp => sgp.ProfId,
+                    c => c.Professor_ID,
+                    (sgp, courses) => new
+                    {
+                        SectionId = sgp.SectionId,
+                        SectionAvg = sgp.SectionAvg,
+                        ProfName = sgp.ProfName,
+                        Courses = courses.Select(c => new
+                        {
+                            Name = c.Course_Name,
+                            Ects = c.Course_Ects
+                        })
+                    }
+                 );
+
+
+foreach (var elem in rb3_Result)
+{
+    Console.WriteLine($"{elem.ProfName} - {elem.SectionId} - {elem.SectionAvg}");
+    foreach(var c in elem.Courses)
+    {
+        Console.WriteLine($"- {c.Name} {c.Ects}");
+    }
 }
